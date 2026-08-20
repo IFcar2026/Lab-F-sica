@@ -20,8 +20,6 @@ const grid = document.getElementById('experimentsGrid');
 const noticeList = document.getElementById('noticeList');
 const searchBar = document.getElementById('searchBar');
  
-const CHAVE_MESTRE_LAB = "IFSP123";
- 
 // --- COMUNICAÇÃO COM A PLANILHA ---
 // Faz a requisição e tenta de novo automaticamente se o Google devolver
 // uma resposta instável (página HTML de erro em vez de JSON).
@@ -122,37 +120,50 @@ function alternarTab(tipo) {
 }
  
 // --- FLUXOS DE AUTENTICAÇÃO ---
-function executarCadastro(event) {
+async function executarCadastro(event) {
     event.preventDefault();
+    const nome = document.getElementById('cadNome').value.trim();
     const senha = document.getElementById('cadPassword').value;
     const senhaConf = document.getElementById('cadPasswordConfirm').value;
     const chave = document.getElementById('cadChave').value;
  
     if (senha !== senhaConf) { alert("As senhas não coincidem!"); return; }
-    if (chave !== CHAVE_MESTRE_LAB) { alert("Chave incorreta!"); return; }
+    if (senha.length < 4) { alert("Use uma senha com pelo menos 4 caracteres."); return; }
  
     const numeroAleatorio = Math.floor(1000000 + Math.random() * 9000000);
     const novoID = "LF" + numeroAleatorio;
  
-    alert(`Cadastrado com sucesso!\n\nSEU ID DE ACESSO: ${novoID}`);
-    document.getElementById('loginId').value = novoID;
-    alternarTab('login');
+    try {
+        await enviarParaPlanilha('Professores', 'cadastrar', { id: novoID, nome, senha, chave });
+        alert(`Cadastrado com sucesso!\n\nSEU ID DE ACESSO: ${novoID}\n\nGuarde esse ID e sua senha, eles serão necessários pra entrar no painel.`);
+        document.getElementById('loginId').value = novoID;
+        document.getElementById('formCadastro').reset();
+        alternarTab('login');
+    } catch (err) {
+        alert("Erro ao cadastrar: " + err.message);
+    }
 }
  
-function executarLogin(event) {
+async function executarLogin(event) {
     event.preventDefault();
     const id = document.getElementById('loginId').value.trim().toUpperCase();
+    const senha = document.getElementById('loginPassword').value;
  
-    if (id.startsWith("LF") && id.length === 9) {
-        usuarioLogado = true;
-        authScreen.style.display = 'none';
-        welcomeScreen.style.display = 'none';
-        mainApp.style.display = 'block';
-        adminPanel.style.display = 'block';
-        userStatus.innerHTML = `Modo Administrativo (${id})`;
-        carregarDados();
-    } else {
-        alert("Erro: O ID deve seguir o padrão LF0000000 (Letras LF + 7 números). Verifique se não digitou espaços!");
+    try {
+        const resultado = await enviarParaPlanilha('Professores', 'login', { id, senha });
+        if (resultado.autorizado) {
+            usuarioLogado = true;
+            authScreen.style.display = 'none';
+            welcomeScreen.style.display = 'none';
+            mainApp.style.display = 'block';
+            adminPanel.style.display = 'block';
+            userStatus.innerHTML = `Modo Administrativo (${resultado.nome})`;
+            carregarDados();
+        } else {
+            alert("ID ou senha incorretos.");
+        }
+    } catch (err) {
+        alert("Erro ao entrar: " + err.message);
     }
 }
  
