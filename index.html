@@ -8,6 +8,8 @@
 </head>
 <body>
 
+<button id="botaoTema" class="botao-tema" onclick="alternarTema()" title="Alternar tema">🌙</button>
+
 <div class="container">
 
     <div id="welcomeScreen">
@@ -78,16 +80,12 @@
                         <input type="text" id="expNome" placeholder="Nome do experimento" required>
                         <select id="expArea" required>
                             <option value="">Selecione a Área...</option>
-                            <option value="Mecânica">Mecânica</option>
-                            <option value="Óptica">Óptica</option>
-                            <option value="Ondulatória">Ondulatória</option>
-                            <option value="Termodinâmica">Termodinâmica</option>
-                            <option value="Eletromagnetismo">Eletromagnetismo</option>
-                            <option value="INSTRUMENTOS DE MEDIDA">Instrumentos de Medida</option>
-                            <option value="ITEM">Item</option>
-                            <option value="SEM DEFINIÇÃO">Sem Definição</option>
-                            <option value="Outros">Outros</option>
                         </select>
+                        <div id="expNovaCategoriaBloco" style="display:none; margin-bottom:10px;">
+                            <input type="text" id="expNovaCategoriaNome" placeholder="Nome da nova categoria" style="margin-bottom:6px;">
+                            <label style="font-size:12px; display:block; margin-bottom:4px;">Cor da categoria</label>
+                            <input type="color" id="expNovaCategoriaCor" value="#3498db" style="height:38px; padding:2px; width:100%;">
+                        </div>
                         <input type="text" id="expLocal" placeholder="Localização (Ex: Armário A)">
                         <input type="text" id="expComp" placeholder="Componentes integrantes">
                         <button type="submit" class="btn-admin-action">Cadastrar Kit</button>

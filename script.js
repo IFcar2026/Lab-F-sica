@@ -1,4 +1,3 @@
-
 // =======================================================
 // CONFIGURAÇÃO: cole aqui a URL do seu Apps Script publicado
 // (Implantar -> Nova implantação -> App da Web -> copiar URL)
@@ -8,6 +7,7 @@ const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwwbfPMl_PJGJTDS34JY
 let experimentos = [];
 let avisos = [];
 let relatos = [];
+let categorias = [];
 let usuarioLogado = false;
  
 // --- MAPEAMENTO DE ELEMENTOS ---
@@ -58,16 +58,19 @@ async function carregarDados() {
         grid.innerHTML = '<div class="no-results">Carregando experimentos...</div>';
         noticeList.innerHTML = '<div style="font-size:14px;">Carregando avisos...</div>';
  
-        const [expData, avisosData, relatosData] = await Promise.all([
+        const [expData, avisosData, relatosData, categoriasData] = await Promise.all([
             buscarDaPlanilha('Experimentos'),
             buscarDaPlanilha('Avisos'),
-            buscarDaPlanilha('Relatos')
+            buscarDaPlanilha('Relatos'),
+            buscarDaPlanilha('Categorias')
         ]);
  
         experimentos = expData;
         avisos = avisosData;
         relatos = relatosData;
+        categorias = categoriasData;
  
+        popularSelectCategoriaAddForm();
         exibirExperimentos(experimentos);
         exibirAvisos();
         if (usuarioLogado) exibirRelatosPendentes();
@@ -77,6 +80,25 @@ async function carregarDados() {
     }
 }
  
+const CHAVE_TEMA = 'labfisica_tema';
+
+function aplicarTemaSalvo() {
+    const temaSalvo = localStorage.getItem(CHAVE_TEMA);
+    if (temaSalvo === 'escuro') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('botaoTema').textContent = '☀️';
+    }
+}
+
+function alternarTema() {
+    const escuro = document.body.classList.toggle('dark-mode');
+    document.getElementById('botaoTema').textContent = escuro ? '☀️' : '🌙';
+    localStorage.setItem(CHAVE_TEMA, escuro ? 'escuro' : 'claro');
+}
+
+aplicarTemaSalvo();
+configurarSelectCategoria('expArea', 'expNovaCategoriaBloco');
+
 // --- CONTROLE DE NAVEGAÇÃO ---
 function entrarComoAluno() {
     usuarioLogado = false;
@@ -167,6 +189,50 @@ async function executarLogin(event) {
     }
 }
  
+function popularSelectCategoriaAddForm() {
+    const select = document.getElementById('expArea');
+    if (!select) return;
+    select.innerHTML = `<option value="">Selecione a Área...</option>` + opcoesDeCategoria('');
+}
+
+// --- CATEGORIAS DINÂMICAS (cor customizada por categoria) ---
+function corCategoria(nomeArea) {
+    const cat = categorias.find(c => (c.nome || '').toLowerCase() === (nomeArea || '').toLowerCase());
+    return cat ? cat.cor : '#7f8c8d'; // cinza como cor padrão pra categoria não encontrada
+}
+
+// Monta as <option> de um select de categoria, incluindo a opção de criar uma nova
+function opcoesDeCategoria(valorAtual) {
+    const opcoes = categorias.map(c =>
+        `<option value="${c.nome}" ${c.nome === valorAtual ? 'selected' : ''}>${c.nome}</option>`
+    ).join('');
+    return opcoes + `<option value="__nova__">➕ Criar nova categoria...</option>`;
+}
+
+// Liga o comportamento de "mostrar campos de nova categoria" quando o select muda
+function configurarSelectCategoria(idSelect, idBlocoNovaCategoria) {
+    const select = document.getElementById(idSelect);
+    const bloco = document.getElementById(idBlocoNovaCategoria);
+    if (!select || !bloco) return;
+    select.addEventListener('change', () => {
+        bloco.style.display = select.value === '__nova__' ? 'block' : 'none';
+    });
+}
+
+// Se o select estiver em "criar nova categoria", cria ela na planilha e devolve o nome final a usar
+async function resolverCategoriaEscolhida(idSelect, idNomeNova, idCorNova) {
+    const select = document.getElementById(idSelect);
+    if (select.value !== '__nova__') return select.value;
+
+    const nome = document.getElementById(idNomeNova).value.trim();
+    const cor = document.getElementById(idCorNova).value;
+    if (!nome) { throw new Error("Digite um nome pra nova categoria."); }
+
+    await enviarParaPlanilha('Categorias', 'adicionar', { nome, cor });
+    categorias.push({ nome, cor }); // já disponibiliza localmente, sem esperar recarregar
+    return nome;
+}
+
 // --- RENDERS ---
 function exibirExperimentos(lista) {
     grid.innerHTML = '';
@@ -178,26 +244,29 @@ function exibirExperimentos(lista) {
     lista.forEach(exp => {
         const card = document.createElement('div');
  
-        let classeArea = (exp.area || 'outros').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
-        card.className = `card card-${classeArea} card-clicavel`;
+        const cor = corCategoria(exp.area);
+        const desativado = exp.status === 'Desativado';
+        card.className = `card card-clicavel${desativado ? ' card-desativado' : ''}`;
+        card.style.borderTopColor = cor;
         card.onclick = () => abrirModalExperimento(exp.linha);
  
         let acoesAdmin = usuarioLogado ? `
             <div class="card-header-actions">
-                <button class="btn-icon" onclick="event.stopPropagation(); removerExperimento(${exp.linha})" title="Remover Experimento">🗑️</button>
+                <button class="btn-icon btn-icon-excluir" onclick="event.stopPropagation(); removerExperimento(${exp.linha})" title="Remover Experimento">🗑️</button>
             </div>
         ` : '';
  
         let seloStatus = '';
         if (exp.status === 'Em Reparo') seloStatus = `<span class="status-badge status-reparo">🛠️ Em Reparo</span>`;
         else if (exp.status === 'Com Defeito') seloStatus = `<span class="status-badge status-defeito">⚠️ Com Defeito</span>`;
+        else if (exp.status === 'Desativado') seloStatus = `<span class="status-badge status-desativado">🚫 Desativado</span>`;
         else seloStatus = `<span class="status-badge status-ativo">✅ Ativo</span>`;
  
         card.innerHTML = `
             <div>
                 ${acoesAdmin}
                 <div class="card-top-row">
-                    <span class="badge badge-${classeArea}">${exp.area || 'Não Definida'}</span>
+                    <span class="badge" style="background-color:${cor}22; color:${cor}; border:1px solid ${cor}55;">${exp.area || 'Não Definida'}</span>
                     ${seloStatus}
                 </div>
                 <h3 style="margin: 5px 0 15px 0; color: var(--primary-color); font-size:16px;">${exp.nome}</h3>
@@ -234,14 +303,16 @@ function exibirAvisos() {
 async function adicionarExperimentoNoGrid(event) {
     event.preventDefault();
     const nome = document.getElementById('expNome').value;
-    const area = document.getElementById('expArea').value;
     const localizacao = document.getElementById('expLocal').value;
     const componentes = document.getElementById('expComp').value;
  
     try {
+        const area = await resolverCategoriaEscolhida('expArea', 'expNovaCategoriaNome', 'expNovaCategoriaCor');
         await enviarParaPlanilha('Experimentos', 'adicionar', { nome, area, localizacao, componentes });
         document.getElementById('formNovoExperimento').reset();
+        document.getElementById('expNovaCategoriaBloco').style.display = 'none';
         await carregarDados();
+        popularSelectCategoriaAddForm();
     } catch (err) {
         alert("Erro ao salvar experimento: " + err.message);
     }
@@ -285,27 +356,23 @@ async function removerAviso(linha) {
     }
 }
  
-const AREAS_DISPONIVEIS = ["Mecânica", "Óptica", "Ondulatória", "Termodinâmica", "Eletromagnetismo", "INSTRUMENTOS DE MEDIDA", "ITEM", "SEM DEFINIÇÃO", "Outros"];
- 
 // --- MODAL DE DETALHES DO EXPERIMENTO ---
 function abrirModalExperimento(linha) {
     const exp = experimentos.find(e => e.linha === linha);
     if (!exp) return;
- 
+
     const modalOverlay = document.getElementById('modalOverlay');
     const modalConteudo = document.getElementById('modalConteudo');
- 
+
     const statusAtual = exp.status || 'Ativo';
- 
+
     if (usuarioLogado) {
-        const opcoesArea = AREAS_DISPONIVEIS.map(a =>
-            `<option value="${a}" ${a === exp.area ? 'selected' : ''}>${a}</option>`
-        ).join('');
- 
+        const opcoesArea = opcoesDeCategoria(exp.area);
+
         modalConteudo.innerHTML = `
             <button class="modal-fechar" onclick="fecharModal()">✕</button>
             <h3>Editar experimento</h3>
- 
+
             <div class="form-group">
                 <label for="modalEditNome">Nome do experimento</label>
                 <input type="text" id="modalEditNome" value="${exp.nome.replace(/"/g, '&quot;')}">
@@ -313,6 +380,12 @@ function abrirModalExperimento(linha) {
             <div class="form-group">
                 <label for="modalEditArea">Área</label>
                 <select id="modalEditArea">${opcoesArea}</select>
+            </div>
+            <div class="form-group" id="modalNovaCategoriaBloco" style="display:none;">
+                <label for="modalNovaCategoriaNome">Nome da nova categoria</label>
+                <input type="text" id="modalNovaCategoriaNome" placeholder="Ex: Robótica">
+                <label for="modalNovaCategoriaCor" style="margin-top:6px;">Cor da categoria</label>
+                <input type="color" id="modalNovaCategoriaCor" value="#3498db" style="height:38px; padding:2px;">
             </div>
             <div class="form-group">
                 <label for="modalEditLocal">Localização</label>
@@ -328,16 +401,19 @@ function abrirModalExperimento(linha) {
                     <option value="Ativo" ${statusAtual === 'Ativo' ? 'selected' : ''}>Ativo</option>
                     <option value="Em Reparo" ${statusAtual === 'Em Reparo' ? 'selected' : ''}>Em Reparo</option>
                     <option value="Com Defeito" ${statusAtual === 'Com Defeito' ? 'selected' : ''}>Com Defeito</option>
+                    <option value="Desativado" ${statusAtual === 'Desativado' ? 'selected' : ''}>Desativado (sem remover do inventário)</option>
                 </select>
             </div>
             <button class="btn-admin-action" onclick="salvarEdicaoExperimento(${linha})">Salvar alterações</button>
- 
+
             <div class="modal-secao">
                 <h4>Relatos deste experimento</h4>
                 <div id="modalRelatosDoItem"></div>
             </div>
         `;
- 
+
+        configurarSelectCategoria('modalEditArea', 'modalNovaCategoriaBloco');
+
         const relatosDoItem = relatos.filter(r => String(r.experimento_linha) === String(linha));
         const container = document.getElementById('modalRelatosDoItem');
         if (relatosDoItem.length === 0) {
@@ -362,7 +438,7 @@ function abrirModalExperimento(linha) {
             <p class="info-item"><span class="info-label">Localização:</span> ${exp.localizacao || 'Não cadastrada'}</p>
             <p class="info-item"><span class="info-label">Componentes:</span> ${exp.componentes || 'Não catalogados'}</p>
             <p class="info-item"><span class="info-label">Status atual:</span> ${statusAtual}</p>
- 
+
             <div class="modal-secao">
                 <div class="form-group">
                     <label for="modalRelatoTexto">Reportar problema com este experimento</label>
@@ -372,28 +448,28 @@ function abrirModalExperimento(linha) {
             </div>
         `;
     }
- 
+
     modalOverlay.style.display = 'flex';
 }
- 
+
 function fecharModal() {
     document.getElementById('modalOverlay').style.display = 'none';
 }
- 
+
 function fecharModalSeClicouFora(event) {
     if (event.target.id === 'modalOverlay') fecharModal();
 }
- 
+
 async function salvarEdicaoExperimento(linha) {
     const nome = document.getElementById('modalEditNome').value.trim();
-    const area = document.getElementById('modalEditArea').value;
     const localizacao = document.getElementById('modalEditLocal').value;
     const componentes = document.getElementById('modalEditComp').value;
     const status = document.getElementById('modalEditStatus').value;
- 
+
     if (!nome) { alert("O nome do experimento não pode ficar em branco."); return; }
- 
+
     try {
+        const area = await resolverCategoriaEscolhida('modalEditArea', 'modalNovaCategoriaNome', 'modalNovaCategoriaCor');
         await enviarParaPlanilha('Experimentos', 'editar', { linha, nome, area, localizacao, componentes, status });
         await carregarDados();
         fecharModal();
@@ -401,14 +477,14 @@ async function salvarEdicaoExperimento(linha) {
         alert("Erro ao salvar alterações: " + err.message);
     }
 }
- 
+
 async function reportarProblema(linha) {
     const descricao = document.getElementById('modalRelatoTexto').value.trim();
     if (!descricao) { alert("Descreva o problema antes de enviar."); return; }
- 
+
     const hoje = new Date();
     const dataFormatada = `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
- 
+
     try {
         await enviarParaPlanilha('Relatos', 'adicionar', { experimento_linha: linha, descricao, data: dataFormatada });
         alert("Obrigado! O relato foi enviado e será verificado pelo responsável do laboratório.");
@@ -417,20 +493,20 @@ async function reportarProblema(linha) {
         alert("Erro ao enviar relato: " + err.message);
     }
 }
- 
+
 // --- PAINEL ADMIN: RELATOS PENDENTES ---
 function exibirRelatosPendentes() {
     const lista = document.getElementById('relatosPendentesList');
     const contador = document.getElementById('contadorRelatos');
     if (!lista || !contador) return;
- 
+
     contador.textContent = relatos.length;
- 
+
     if (relatos.length === 0) {
         lista.innerHTML = `<p style="font-size:13px; color:#7f8c8d;">Nenhum relato pendente.</p>`;
         return;
     }
- 
+
     lista.innerHTML = relatos.map(r => {
         const exp = experimentos.find(e => String(e.linha) === String(r.experimento_linha));
         const nomeExp = exp ? exp.nome : `Experimento (linha ${r.experimento_linha})`;
@@ -447,7 +523,7 @@ function exibirRelatosPendentes() {
         `;
     }).join('');
 }
- 
+
 async function confirmarRelato(linhaRelato, experimentoLinha) {
     try {
         await enviarParaPlanilha('Experimentos', 'mudarStatus', { linha: experimentoLinha, status: 'Com Defeito' });
@@ -458,7 +534,7 @@ async function confirmarRelato(linhaRelato, experimentoLinha) {
         alert("Erro ao confirmar relato: " + err.message);
     }
 }
- 
+
 async function descartarRelato(linhaRelato) {
     if (!confirm("Descartar esse relato sem alterar o status do experimento?")) return;
     try {
@@ -468,7 +544,7 @@ async function descartarRelato(linhaRelato) {
         alert("Erro ao descartar relato: " + err.message);
     }
 }
- 
+
 // --- BARRA DE BUSCA ---
 if (searchBar) {
     searchBar.addEventListener('input', (e) => {
@@ -498,4 +574,3 @@ window.salvarEdicaoExperimento = salvarEdicaoExperimento;
 window.reportarProblema = reportarProblema;
 window.confirmarRelato = confirmarRelato;
 window.descartarRelato = descartarRelato;
- 

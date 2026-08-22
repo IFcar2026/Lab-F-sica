@@ -173,12 +173,20 @@ body {
 }
 
 .admin-block {
-    background: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.85);
     padding: 15px;
-    border-radius: 6px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
-.admin-block h4 { margin-top: 0; margin-bottom: 10px; color: var(--primary-color); }
+.admin-block h4 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    color: var(--primary-color);
+}
 .admin-block input, .admin-block select, .admin-block textarea { margin-bottom: 10px; background: white; }
 
 .btn-admin-action {
@@ -315,7 +323,17 @@ header { display: flex; justify-content: space-between; align-items: center; mar
 .btn-icon:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
-/* --- SELO DE STATUS (opção 2: selo no topo do card) --- */
+
+.btn-icon-excluir {
+    background-color: rgba(231, 76, 60, 0.1) !important;
+    border: 1px solid rgba(231, 76, 60, 0.4) !important;
+    box-shadow: 0 0 6px rgba(231, 76, 60, 0.35);
+}
+.btn-icon-excluir:hover {
+    background-color: rgba(231, 76, 60, 0.25) !important;
+    box-shadow: 0 0 12px rgba(231, 76, 60, 0.6);
+}
+/* --- SELO DE STATUS (estilo "neon": cor viva + brilho leve) --- */
 .status-badge {
     font-size: 11px;
     padding: 3px 10px;
@@ -323,11 +341,46 @@ header { display: flex; justify-content: space-between; align-items: center; mar
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-weight: 500;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    border: 1px solid transparent;
 }
-.status-ativo { background-color: #eafaf1; color: #1e8449; }
-.status-reparo { background-color: #fff3e0; color: #b25c00; }
-.status-defeito { background-color: #fdedec; color: #c0392b; }
+.status-ativo {
+    background-color: rgba(46, 204, 113, 0.12);
+    color: #27ae60;
+    border-color: rgba(46, 204, 113, 0.55);
+    box-shadow: 0 0 8px rgba(46, 204, 113, 0.45);
+}
+.status-reparo {
+    background-color: rgba(243, 156, 18, 0.14);
+    color: #d68910;
+    border-color: rgba(243, 156, 18, 0.55);
+    box-shadow: 0 0 8px rgba(243, 156, 18, 0.45);
+}
+.status-defeito {
+    background-color: rgba(231, 76, 60, 0.14);
+    color: #e74c3c;
+    border-color: rgba(231, 76, 60, 0.55);
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.45);
+}
+.status-desativado {
+    background-color: rgba(127, 140, 141, 0.12);
+    color: #7f8c8d;
+    border-color: rgba(127, 140, 141, 0.4);
+    box-shadow: none;
+}
+body.dark-mode .status-ativo { color: #2ecc71; }
+body.dark-mode .status-reparo { color: #f39c12; }
+body.dark-mode .status-defeito { color: #ff6b5b; }
+body.dark-mode .status-desativado { color: #9aa1a8; }
+
+/* Card com experimento desativado: fica visível mas "apagado" */
+.card-desativado {
+    opacity: 0.55;
+    filter: grayscale(35%);
+}
+.card-desativado:hover { opacity: 0.85; }
+
 .card-top-row {
     display: flex;
     justify-content: space-between;
@@ -336,7 +389,7 @@ header { display: flex; justify-content: space-between; align-items: center; mar
     margin-bottom: 5px;
 }
 .card-clicavel { cursor: pointer; }
- 
+
 /* --- MODAL DE DETALHES DO EXPERIMENTO --- */
 .modal-overlay {
     position: fixed;
@@ -394,4 +447,89 @@ header { display: flex; justify-content: space-between; align-items: center; mar
     font-size: 14px;
     color: var(--primary-color);
 }
- 
+
+/* --- BOTÃO DE ALTERNAR TEMA --- */
+.botao-tema {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 1100;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    transition: transform 0.2s;
+}
+.botao-tema:hover { transform: scale(1.08); }
+
+/* --- MODO ESCURO --- */
+body.dark-mode {
+    --primary-color: #eceff1;
+    --bg-color: #14181c;
+    --card-bg: #22282e;
+    --text-color: #e8e8e8;
+}
+body.dark-mode .botao-tema {
+    background: #22272b;
+    border-color: #3a3f44;
+}
+/* Elevação e contorno sutil dos cards, pra não "somar" com o fundo */
+body.dark-mode .card {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    border: 1px solid #33393f;
+    border-top-width: 4px;
+}
+body.dark-mode #authScreen,
+body.dark-mode .modal-content,
+body.dark-mode #adminPanel,
+body.dark-mode .admin-block,
+body.dark-mode #searchBar,
+body.dark-mode .notice-board {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border-color: #33393f !important;
+}
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4,
+body.dark-mode label, body.dark-mode p {
+    color: var(--text-color) !important;
+}
+body.dark-mode .info-label,
+body.dark-mode .info-item,
+body.dark-mode small {
+    color: #9aa1a8 !important;
+}
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+    background-color: #2a2f34 !important;
+    color: var(--text-color) !important;
+    border-color: #3a3f44 !important;
+}
+body.dark-mode .notice-item,
+body.dark-mode .modal-relato-item {
+    background-color: #2a2f34 !important;
+    border-color: #3a3f44 !important;
+}
+body.dark-mode .modal-secao {
+    border-top-color: #3a3f44 !important;
+}
+body.dark-mode .modal-fechar {
+    color: #9aa1a8 !important;
+}
+body.dark-mode .no-results {
+    color: #9aa1a8 !important;
+}
+
+body.dark-mode .admin-block {
+    border-color: #33393f !important;
+}
+body.dark-mode .admin-block h4 {
+    border-bottom-color: #33393f !important;
+}
+body.dark-mode .card-desativado {
+    filter: grayscale(50%) brightness(0.85);
+}
