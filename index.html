@@ -14,8 +14,9 @@
 
     <div id="welcomeScreen">
         <h1 class="welcome-title">Laboratório de Física - IFSP<br><small style="font-size: 16px; color:#7f8c8d;">Selecione seu perfil de acesso</small></h1>
+        <div id="avisoInventario" style="display:none;"></div>
         <div class="btn-group">
-            <button class="rect-button" onclick="entrarComoAluno()">SOU ALUNO<br><span style="font-size: 12px; font-weight: normal; display: block;">Acesso Rápido de Leitura</span></button>
+            <button id="btnSouAluno" class="rect-button" onclick="entrarComoAluno()">SOU ALUNO<br><span style="font-size: 12px; font-weight: normal; display: block;">Acesso Rápido de Leitura</span></button>
             <button class="rect-button admin" onclick="mostrarTelaAuth()">SOU PROFESSOR / MONITOR<br><span style="font-size: 12px; font-weight: normal; display: block;">Painel de Controle</span></button>
         </div>
     </div>
@@ -88,6 +89,8 @@
                         </div>
                         <input type="text" id="expLocal" placeholder="Localização (Ex: Armário A)">
                         <input type="text" id="expComp" placeholder="Componentes integrantes">
+                        <input type="number" id="expQuantidade" min="1" value="1" placeholder="Quantidade de unidades" title="Quantas unidades físicas existem deste experimento">
+                        <input type="text" id="expPatrimonio" placeholder="Nº de patrimônio (só se for 1 unidade)">
                         <button type="submit" class="btn-admin-action">Cadastrar Kit</button>
                     </form>
                 </div>
@@ -104,6 +107,16 @@
                 <div class="admin-block">
                     <h4>🔧 Relatos Pendentes (<span id="contadorRelatos">0</span>)</h4>
                     <div id="relatosPendentesList" style="max-height: 220px; overflow-y: auto;"></div>
+                </div>
+
+                <div class="admin-block">
+                    <h4>📋 Roteiros Cadastrados (<span id="contadorRoteiros">0</span>)</h4>
+                    <div id="roteirosCadastradosList" style="max-height: 220px; overflow-y: auto;"></div>
+                </div>
+
+                <div class="admin-block">
+                    <h4>🔒 Modo Inventário</h4>
+                    <div id="painelModoInventario"></div>
                 </div>
             </div>
         </div>
