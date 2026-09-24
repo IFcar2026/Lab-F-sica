@@ -1,3 +1,4 @@
+
 // =======================================================
 // CONFIGURAÇÃO: cole aqui a URL do seu Apps Script publicado
 // (Implantar -> Nova implantação -> App da Web -> copiar URL)
