@@ -2,7 +2,7 @@
 // CONFIGURAÇÃO: cole aqui a URL do seu Apps Script publicado
 // (Implantar -> Nova implantação -> App da Web -> copiar URL)
 // =======================================================
-const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwwbfPMl_PJGJTDS34JYKA2NHTKEfxoUWC55YoqT0176TAP6z5gYEjDDoQthu9ZGkQtew/exec";
+const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxj1fi240YGOO1_eyU7jp_Z4QDYdHgkakA9r2ecDA1IvyDeULH96y7vlBP3gBWrPQQO/exec";
  
 let experimentos = [];
 let avisos = [];
