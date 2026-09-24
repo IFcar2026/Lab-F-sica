@@ -127,7 +127,10 @@
                 </div>
         </div>
 
-        <input type="text" id="searchBar" class="search-box" placeholder="Pesquise por nome do experimento ou área (ex: Mecânica, Óptica)...">
+        <div style="display:flex; gap:10px; align-items:center;">
+            <input type="text" id="searchBar" class="search-box" placeholder="Pesquise por nome do experimento ou área (ex: Mecânica, Óptica)..." style="flex:1;">
+            <button class="btn-icon" onclick="atualizarAgora()" title="Buscar dados mais recentes agora">🔄</button>
+        </div>
 
         <div id="experimentsGrid" class="grid"></div>
     </div>
