@@ -2,7 +2,7 @@
 // CONFIGURAÇÃO: cole aqui a URL do seu Apps Script publicado
 // (Implantar -> Nova implantação -> App da Web -> copiar URL)
 // =======================================================
-const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxj1fi240YGOO1_eyU7jp_Z4QDYdHgkakA9r2ecDA1IvyDeULH96y7vlBP3gBWrPQQO/exec";
+const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwwbfPMl_PJGJTDS34JYKA2NHTKEfxoUWC55YoqT0176TAP6z5gYEjDDoQthu9ZGkQtew/exec";
  
 let experimentos = [];
 let avisos = [];
@@ -40,8 +40,9 @@ async function requisitarComRetry(fazerRequisicao, tentativas = 3) {
     }
 }
 
-async function buscarDaPlanilha(tipo) {
-    return requisitarComRetry(() => fetch(`${URL_SCRIPT}?tipo=${tipo}`));
+async function buscarDaPlanilha(tipo, forcar) {
+    const sufixo = forcar ? '&forcar=1' : '';
+    return requisitarComRetry(() => fetch(`${URL_SCRIPT}?tipo=${tipo}${sufixo}`));
 }
 
 // Content-Type text/plain evita que o navegador dispare um "preflight" (OPTIONS),
@@ -54,16 +55,16 @@ async function enviarParaPlanilha(tipo, acao, dados) {
     }));
 }
  
-async function carregarDados() {
+async function carregarDados(forcar) {
     try {
         grid.innerHTML = '<div class="no-results">Carregando experimentos...</div>';
         noticeList.innerHTML = '<div style="font-size:14px;">Carregando avisos...</div>';
  
         const [expData, avisosData, relatosData, categoriasData] = await Promise.all([
-            buscarDaPlanilha('Experimentos'),
-            buscarDaPlanilha('Avisos'),
-            buscarDaPlanilha('Relatos'),
-            buscarDaPlanilha('Categorias')
+            buscarDaPlanilha('Experimentos', forcar),
+            buscarDaPlanilha('Avisos', forcar),
+            buscarDaPlanilha('Relatos', forcar),
+            buscarDaPlanilha('Categorias', forcar)
         ]);
  
         experimentos = expData;
@@ -928,6 +929,7 @@ window.descartarRelato = descartarRelato;
 window.ativarModoInventario = ativarModoInventario;
 window.encerrarModoInventario = encerrarModoInventario;
 window.cancelarModoInventario = cancelarModoInventario;
+window.atualizarAgora = function () { carregarDados(true); };
 window.abrirModalGrupo = abrirModalGrupo;
 window.salvarEdicaoGrupo = salvarEdicaoGrupo;
 window.removerGrupo = removerGrupo;
