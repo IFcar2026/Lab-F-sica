@@ -556,3 +556,18 @@ body.dark-mode .status-patrimonio {
     color: #c8d2dc;
     border-color: rgba(200, 210, 220, 0.35);
 }
+
+/* --- BLOQUEIO VISUAL DURANTE SALVAMENTO (evita cliques duplicados empilharem pedidos) --- */
+body.operacao-em-andamento {
+    cursor: wait;
+}
+body.operacao-em-andamento button,
+body.operacao-em-andamento .card-clicavel,
+body.operacao-em-andamento input,
+body.operacao-em-andamento select {
+    pointer-events: none !important;
+    opacity: 0.65;
+}
+body.operacao-em-andamento .btn-admin-action {
+    position: relative;
+}
