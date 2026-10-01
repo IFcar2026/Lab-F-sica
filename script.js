@@ -1,10 +1,8 @@
-
 // =======================================================
 // CONFIGURAÇÃO: cole aqui a URL do seu Apps Script publicado
 // (Implantar -> Nova implantação -> App da Web -> copiar URL)
 // =======================================================
 const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxj1fi240YGOO1_eyU7jp_Z4QDYdHgkakA9r2ecDA1IvyDeULH96y7vlBP3gBWrPQQO/exec";
- 
 let experimentos = [];
 let avisos = [];
 let relatos = [];
@@ -48,12 +46,23 @@ async function buscarDaPlanilha(tipo, forcar) {
 
 // Content-Type text/plain evita que o navegador dispare um "preflight" (OPTIONS),
 // que o Apps Script não responde corretamente.
+let chamadasDeEscritaAtivas = 0;
+function definirCarregando(delta) {
+    chamadasDeEscritaAtivas += delta;
+    document.body.classList.toggle('operacao-em-andamento', chamadasDeEscritaAtivas > 0);
+}
+
 async function enviarParaPlanilha(tipo, acao, dados) {
-    return requisitarComRetry(() => fetch(URL_SCRIPT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ tipo, acao, dados })
-    }));
+    definirCarregando(1);
+    try {
+        return await requisitarComRetry(() => fetch(URL_SCRIPT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ tipo, acao, dados })
+        }));
+    } finally {
+        definirCarregando(-1);
+    }
 }
  
 async function carregarDados(forcar) {
@@ -80,6 +89,36 @@ async function carregarDados(forcar) {
     } catch (err) {
         grid.innerHTML = `<div class="no-results">Erro ao carregar dados: ${err.message}</div>`;
         console.error(err);
+    }
+}
+
+// Atualização leve: só a lista de experimentos. Usada depois de ações rotineiras
+// (editar, mudar status, cadastrar) pra não disparar 4 buscas completas a cada clique.
+async function recarregarExperimentos() {
+    try {
+        experimentos = await buscarDaPlanilha('Experimentos', true);
+        exibirExperimentos(experimentos);
+        if (usuarioLogado) exibirRoteirosCadastrados();
+    } catch (err) {
+        alert("Erro ao atualizar: " + err.message);
+    }
+}
+
+async function recarregarAvisos() {
+    try {
+        avisos = await buscarDaPlanilha('Avisos', true);
+        exibirAvisos();
+    } catch (err) {
+        alert("Erro ao atualizar avisos: " + err.message);
+    }
+}
+
+async function recarregarRelatos() {
+    try {
+        relatos = await buscarDaPlanilha('Relatos', true);
+        if (usuarioLogado) exibirRelatosPendentes();
+    } catch (err) {
+        alert("Erro ao atualizar relatos: " + err.message);
     }
 }
  
@@ -479,7 +518,7 @@ async function adicionarExperimentoNoGrid(event) {
         await enviarParaPlanilha('Experimentos', 'adicionar', { nome, area, localizacao, componentes, quantidade, patrimonio });
         document.getElementById('formNovoExperimento').reset();
         document.getElementById('expNovaCategoriaBloco').style.display = 'none';
-        await carregarDados();
+        await recarregarExperimentos();
         popularSelectCategoriaAddForm();
     } catch (err) {
         alert("Erro ao salvar experimento: " + err.message);
@@ -490,7 +529,7 @@ async function removerExperimento(linha) {
     if (!confirm("Tem certeza que deseja remover este experimento do inventário?")) return;
     try {
         await enviarParaPlanilha('Experimentos', 'remover', { linha });
-        await carregarDados();
+        await recarregarExperimentos();
     } catch (err) {
         alert("Erro ao remover experimento: " + err.message);
     }
@@ -508,7 +547,7 @@ async function adicionarAvisoNoMural(event) {
     try {
         await enviarParaPlanilha('Avisos', 'adicionar', { autor, texto, data: dataFormatada });
         document.getElementById('formNovoAviso').reset();
-        await carregarDados();
+        await recarregarAvisos();
     } catch (err) {
         alert("Erro ao publicar aviso: " + err.message);
     }
@@ -518,7 +557,7 @@ async function removerAviso(linha) {
     if (!confirm("Deseja apagar esse aviso do mural?")) return;
     try {
         await enviarParaPlanilha('Avisos', 'remover', { linha });
-        await carregarDados();
+        await recarregarAvisos();
     } catch (err) {
         alert("Erro ao remover aviso: " + err.message);
     }
@@ -642,7 +681,7 @@ async function salvarEdicaoGrupo(chave) {
     try {
         dados.area = await resolverCategoriaEscolhida('grupoEditArea', 'grupoNovaCategoriaNome', 'grupoNovaCategoriaCor');
         await enviarParaPlanilha('Experimentos', 'editarGrupo', dados);
-        await carregarDados();
+        await recarregarExperimentos();
         fecharModal();
     } catch (err) {
         alert("Erro ao salvar alterações: " + err.message);
@@ -657,7 +696,7 @@ async function removerGrupo(chave) {
 
     try {
         await enviarParaPlanilha('Experimentos', 'removerGrupo', { linhas: unidades.map(u => u.linha) });
-        await carregarDados();
+        await recarregarExperimentos();
     } catch (err) {
         alert("Erro ao remover: " + err.message);
     }
@@ -803,7 +842,7 @@ async function salvarEdicaoExperimento(linha) {
     try {
         const area = await resolverCategoriaEscolhida('modalEditArea', 'modalNovaCategoriaNome', 'modalNovaCategoriaCor');
         await enviarParaPlanilha('Experimentos', 'editar', { linha, nome, area, localizacao, componentes, imagem_url, manual_url, roteiro_url, status, patrimonio });
-        await carregarDados();
+        await recarregarExperimentos();
         fecharModal();
     } catch (err) {
         alert("Erro ao salvar alterações: " + err.message);
@@ -881,7 +920,7 @@ async function confirmarRelato(linhaRelato, experimentoLinha) {
     try {
         await enviarParaPlanilha('Experimentos', 'mudarStatus', { linha: experimentoLinha, status: 'Com Defeito' });
         await enviarParaPlanilha('Relatos', 'remover', { linha: linhaRelato });
-        await carregarDados();
+        await Promise.all([recarregarExperimentos(), recarregarRelatos()]);
         fecharModal();
     } catch (err) {
         alert("Erro ao confirmar relato: " + err.message);
@@ -892,7 +931,7 @@ async function descartarRelato(linhaRelato) {
     if (!confirm("Descartar esse relato sem alterar o status do experimento?")) return;
     try {
         await enviarParaPlanilha('Relatos', 'remover', { linha: linhaRelato });
-        await carregarDados();
+        await recarregarRelatos();
     } catch (err) {
         alert("Erro ao descartar relato: " + err.message);
     }
