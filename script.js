@@ -3,7 +3,7 @@
 // (Implantar -> Nova implantação -> App da Web -> copiar URL)
 // =======================================================
 const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxj1fi240YGOO1_eyU7jp_Z4QDYdHgkakA9r2ecDA1IvyDeULH96y7vlBP3gBWrPQQO/exec";
-
+ 
 let experimentos = [];
 let avisos = [];
 let relatos = [];
@@ -39,12 +39,12 @@ async function requisitarComRetry(fazerRequisicao, tentativas = 3) {
         }
     }
 }
- 
+
 async function buscarDaPlanilha(tipo, forcar) {
     const sufixo = forcar ? '&forcar=1' : '';
     return requisitarComRetry(() => fetch(`${URL_SCRIPT}?tipo=${tipo}${sufixo}`));
 }
- 
+
 // Content-Type text/plain evita que o navegador dispare um "preflight" (OPTIONS),
 // que o Apps Script não responde corretamente.
 let chamadasDeEscritaAtivas = 0;
@@ -52,7 +52,7 @@ function definirCarregando(delta) {
     chamadasDeEscritaAtivas += delta;
     document.body.classList.toggle('operacao-em-andamento', chamadasDeEscritaAtivas > 0);
 }
- 
+
 async function enviarParaPlanilha(tipo, acao, dados) {
     definirCarregando(1);
     try {
@@ -92,7 +92,7 @@ async function carregarDados(forcar) {
         console.error(err);
     }
 }
- 
+
 // Atualização leve: só a lista de experimentos. Usada depois de ações rotineiras
 // (editar, mudar status, cadastrar) pra não disparar 4 buscas completas a cada clique.
 async function recarregarExperimentos() {
@@ -104,7 +104,7 @@ async function recarregarExperimentos() {
         alert("Erro ao atualizar: " + err.message);
     }
 }
- 
+
 async function recarregarAvisos() {
     try {
         avisos = await buscarDaPlanilha('Avisos', true);
@@ -113,7 +113,7 @@ async function recarregarAvisos() {
         alert("Erro ao atualizar avisos: " + err.message);
     }
 }
- 
+
 async function recarregarRelatos() {
     try {
         relatos = await buscarDaPlanilha('Relatos', true);
@@ -124,7 +124,7 @@ async function recarregarRelatos() {
 }
  
 const CHAVE_TEMA = 'labfisica_tema';
- 
+
 function aplicarTemaSalvo() {
     const temaSalvo = localStorage.getItem(CHAVE_TEMA);
     if (temaSalvo === 'escuro') {
@@ -132,17 +132,17 @@ function aplicarTemaSalvo() {
         document.getElementById('botaoTema').textContent = '☀️';
     }
 }
- 
+
 function alternarTema() {
     const escuro = document.body.classList.toggle('dark-mode');
     document.getElementById('botaoTema').textContent = escuro ? '☀️' : '🌙';
     localStorage.setItem(CHAVE_TEMA, escuro ? 'escuro' : 'claro');
 }
- 
+
 aplicarTemaSalvo();
 configurarSelectCategoria('expArea', 'expNovaCategoriaBloco');
 verificarModoInventario();
- 
+
 // --- CONTROLE DE NAVEGAÇÃO ---
 function entrarComoAluno() {
     if (configSistema.modo_inventario === 'ativo') {
@@ -243,7 +243,7 @@ function popularSelectCategoriaAddForm() {
     if (!select) return;
     select.innerHTML = `<option value="">Selecione a Área...</option>` + opcoesDeCategoria('');
 }
- 
+
 // --- MODO INVENTÁRIO (bloqueia consulta pública durante a contagem física) ---
 async function verificarModoInventario() {
     try {
@@ -252,11 +252,11 @@ async function verificarModoInventario() {
         console.error('Erro ao checar modo inventário:', err);
         return;
     }
- 
+
     const aviso = document.getElementById('avisoInventario');
     const btnAluno = document.getElementById('btnSouAluno');
     if (!aviso || !btnAluno) return;
- 
+
     if (configSistema.modo_inventario === 'ativo') {
         aviso.style.display = 'block';
         aviso.innerHTML = `<div style="background:#fdedec; color:#c0392b; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-size:14px;">
@@ -272,11 +272,11 @@ async function verificarModoInventario() {
         btnAluno.style.cursor = 'pointer';
     }
 }
- 
+
 function exibirPainelModoInventario() {
     const painel = document.getElementById('painelModoInventario');
     if (!painel) return;
- 
+
     if (configSistema.modo_inventario === 'ativo') {
         painel.innerHTML = `
             <p style="font-size:13px; color:#c0392b; font-weight:600;">🔒 Inventário em andamento — consulta de estudante está bloqueada.</p>
@@ -294,11 +294,11 @@ function exibirPainelModoInventario() {
         `;
     }
 }
- 
+
 async function ativarModoInventario() {
     const chave = prompt("Digite a chave mestra do laboratório pra confirmar:");
     if (chave === null) return;
- 
+
     try {
         await enviarParaPlanilha('Config', 'ativarInventario', { chave });
         await verificarModoInventario();
@@ -309,13 +309,13 @@ async function ativarModoInventario() {
         alert("Erro ao ativar: " + err.message);
     }
 }
- 
+
 async function encerrarModoInventario() {
     if (!confirm("Confirma que o inventário foi concluído? Isso libera a consulta de estudante de novo.")) return;
- 
+
     const hoje = new Date();
     const dataFormatada = `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
- 
+
     try {
         await enviarParaPlanilha('Config', 'encerrarInventario', { data: dataFormatada });
         await verificarModoInventario();
@@ -325,10 +325,10 @@ async function encerrarModoInventario() {
         alert("Erro ao encerrar: " + err.message);
     }
 }
- 
+
 async function cancelarModoInventario() {
     if (!confirm("Cancelar o Modo Inventário sem registrar conclusão?")) return;
- 
+
     try {
         await enviarParaPlanilha('Config', 'cancelarInventario', {});
         await verificarModoInventario();
@@ -338,14 +338,14 @@ async function cancelarModoInventario() {
         alert("Erro ao cancelar: " + err.message);
     }
 }
- 
- 
+
+
 // --- CATEGORIAS DINÂMICAS (cor customizada por categoria) ---
 function corCategoria(nomeArea) {
     const cat = categorias.find(c => (c.nome || '').toLowerCase() === (nomeArea || '').toLowerCase());
     return cat ? cat.cor : '#7f8c8d'; // cinza como cor padrão pra categoria não encontrada
 }
- 
+
 // Monta as <option> de um select de categoria, incluindo a opção de criar uma nova
 function opcoesDeCategoria(valorAtual) {
     const opcoes = categorias.map(c =>
@@ -353,7 +353,7 @@ function opcoesDeCategoria(valorAtual) {
     ).join('');
     return opcoes + `<option value="__nova__">➕ Criar nova categoria...</option>`;
 }
- 
+
 // Liga o comportamento de "mostrar campos de nova categoria" quando o select muda
 function configurarSelectCategoria(idSelect, idBlocoNovaCategoria) {
     const select = document.getElementById(idSelect);
@@ -363,32 +363,41 @@ function configurarSelectCategoria(idSelect, idBlocoNovaCategoria) {
         bloco.style.display = select.value === '__nova__' ? 'block' : 'none';
     });
 }
- 
+
 // Se o select estiver em "criar nova categoria", cria ela na planilha e devolve o nome final a usar
 async function resolverCategoriaEscolhida(idSelect, idNomeNova, idCorNova) {
     const select = document.getElementById(idSelect);
     if (select.value !== '__nova__') return select.value;
- 
+
     const nome = document.getElementById(idNomeNova).value.trim();
     const cor = document.getElementById(idCorNova).value;
     if (!nome) { throw new Error("Digite um nome pra nova categoria."); }
- 
+
     await enviarParaPlanilha('Categorias', 'adicionar', { nome, cor });
     categorias.push({ nome, cor }); // já disponibiliza localmente, sem esperar recarregar
     return nome;
 }
- 
+
 // --- RENDERS ---
 // --- AGRUPAMENTO POR TIPO (uma linha da planilha = uma unidade física) ---
+// Escapa texto para uso seguro dentro de atributos HTML (ex: alt="...")
+function escAttr(t) {
+    return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 function chaveDoGrupo(exp) {
+    // A chave é usada em atributos onclick="..." — por isso removemos aspas, <, >, &
+    // e barras invertidas, que quebrariam o HTML (ex: nomes com 6" de polegadas).
     const norm = (t) => (t || '').toString().toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ').trim();
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/["'`<>&\\]/g, "")
+        .replace(/\s+/g, ' ').trim();
     return norm(exp.nome) + '||' + norm(exp.area);
 }
- 
+
 // Ordem de gravidade: o card agrupado mostra sempre o status mais crítico do grupo
 const PRIORIDADE_STATUS = ['Com Defeito', 'Em Reparo', 'Desativado', 'Ativo'];
- 
+
 function agruparExperimentos(lista) {
     const mapa = new Map();
     lista.forEach(exp => {
@@ -396,7 +405,7 @@ function agruparExperimentos(lista) {
         if (!mapa.has(chave)) mapa.set(chave, { ...exp, unidades: [] });
         mapa.get(chave).unidades.push(exp);
     });
- 
+
     return Array.from(mapa.values()).map(grupo => {
         const statusDasUnidades = grupo.unidades.map(u => u.status || 'Ativo');
         const statusResumo = PRIORIDADE_STATUS.find(s => statusDasUnidades.includes(s)) || 'Ativo';
@@ -405,66 +414,66 @@ function agruparExperimentos(lista) {
         return { ...grupo, statusResumo, contagem, linhas: grupo.unidades.map(u => u.linha) };
     });
 }
- 
+
 function seloDeStatus(status) {
     if (status === 'Em Reparo') return `<span class="status-badge status-reparo">🛠️ Em Reparo</span>`;
     if (status === 'Com Defeito') return `<span class="status-badge status-defeito">⚠️ Com Defeito</span>`;
     if (status === 'Desativado') return `<span class="status-badge status-desativado">🚫 Desativado</span>`;
     return `<span class="status-badge status-ativo">✅ Ativo</span>`;
 }
- 
+
 function montarMiniatura(exp, cor, idUnico) {
     if (!exp.imagem_url) return '';
-    return `<img src="${exp.imagem_url}" alt="${exp.nome}" class="card-thumb" onerror="this.style.display='none';">`;
+    return `<img src="${exp.imagem_url}" alt="${escAttr(exp.nome)}" class="card-thumb" onerror="this.style.display='none';">`;
 }
- 
+
 function exibirExperimentos(lista) {
     grid.innerHTML = '';
     if (lista.length === 0) {
         grid.innerHTML = '<div class="no-results">Nenhum experimento encontrado.</div>';
         return;
     }
- 
+
     const modoInventario = configSistema.modo_inventario === 'ativo';
- 
+
     // No modo inventário cada unidade física aparece sozinha; fora dele, agrupa por tipo
     const itens = modoInventario
         ? lista.map(exp => ({ ...exp, unidades: [exp], linhas: [exp.linha] }))
         : agruparExperimentos(lista);
- 
+
     itens.forEach(item => {
         const card = document.createElement('div');
         const cor = corCategoria(item.area);
         const qtd = item.unidades.length;
         const statusExibido = modoInventario ? (item.status || 'Ativo') : item.statusResumo;
- 
+
         card.className = `card card-clicavel${statusExibido === 'Desativado' ? ' card-desativado' : ''}`;
         card.style.borderTopColor = cor;
         card.onclick = () => modoInventario
             ? abrirModalExperimento(item.linha)
             : abrirModalGrupo(chaveDoGrupo(item));
- 
+
         const acoesAdmin = usuarioLogado ? `
             <div class="card-header-actions">
                 ${item.manual_url ? `<a href="${item.manual_url}" target="_blank" rel="noopener" class="btn-icon" title="Abrir manual" onclick="event.stopPropagation();">📄</a>` : ''}
                 <button class="btn-icon btn-icon-excluir" onclick="event.stopPropagation(); ${modoInventario ? `removerExperimento(${item.linha})` : `removerGrupo('${chaveDoGrupo(item)}')`}" title="${modoInventario ? 'Remover esta unidade' : 'Remover todas as unidades'}">🗑️</button>
             </div>
         ` : '';
- 
+
         // No modo inventário o patrimônio vira selo, do lado do status
         const seloPatrimonio = modoInventario
             ? `<span class="status-badge status-patrimonio">🏷️ ${item.patrimonio || 'sem nº'}</span>`
             : '';
- 
+
         // Fora do inventário, um grupo com várias unidades mostra a contagem
         let linhaQuantidade = '';
         if (!modoInventario && qtd > 1) {
             const problemas = (item.contagem['Com Defeito'] || 0) + (item.contagem['Em Reparo'] || 0);
             linhaQuantidade = `<p class="info-item"><span class="info-label">Unidades:</span> ${qtd}${problemas ? ` <span style="color:#c0392b;">(${problemas} com problema)</span>` : ''}</p>`;
         }
- 
+
         const idUnico = modoInventario ? item.linha : chaveDoGrupo(item).replace(/[^a-z0-9]/g, '');
- 
+
         card.innerHTML = `
             ${montarMiniatura(item, cor, idUnico)}
             <div>
@@ -482,7 +491,7 @@ function exibirExperimentos(lista) {
         grid.appendChild(card);
     });
 }
- 
+
  
 function exibirAvisos() {
     noticeList.innerHTML = '';
@@ -564,30 +573,30 @@ async function removerAviso(linha) {
     }
 }
  
- 
+
 // --- MODAL DE GRUPO (card agrupado, fora do modo inventário) ---
 function abrirModalGrupo(chave) {
     const unidades = experimentos.filter(e => chaveDoGrupo(e) === chave);
     if (unidades.length === 0) return;
- 
+
     const ref = unidades[0]; // representante do grupo (campos compartilhados)
     const modalOverlay = document.getElementById('modalOverlay');
     const modalConteudo = document.getElementById('modalConteudo');
- 
+
     const listaUnidades = unidades.map(u => `
         <div class="modal-relato-item" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
             <span>🏷️ ${u.patrimonio || '<em style="color:#7f8c8d;">sem nº</em>'}</span>
             ${seloDeStatus(u.status || 'Ativo')}
         </div>
     `).join('');
- 
+
     if (usuarioLogado) {
         const opcoesArea = opcoesDeCategoria(ref.area);
         modalConteudo.innerHTML = `
             <button class="modal-fechar" onclick="fecharModal()">✕</button>
             <h3>${ref.nome}</h3>
             <p style="font-size:13px; color:#7f8c8d; margin-top:-8px;">${unidades.length} unidade(s) cadastrada(s)</p>
- 
+
             <div class="form-group">
                 <label for="grupoEditNome">Nome do experimento</label>
                 <input type="text" id="grupoEditNome" value="${ref.nome.replace(/"/g, '&quot;')}">
@@ -624,7 +633,7 @@ function abrirModalGrupo(chave) {
             </div>
             <p style="font-size:12px; color:#7f8c8d;">Salvar aplica estes campos a todas as ${unidades.length} unidade(s). Status e patrimônio são editados individualmente no Modo Inventário.</p>
             <button class="btn-admin-action" onclick="salvarEdicaoGrupo('${chave}')">Salvar alterações</button>
- 
+
             <div class="modal-secao">
                 <h4>Unidades deste experimento</h4>
                 ${listaUnidades}
@@ -633,7 +642,7 @@ function abrirModalGrupo(chave) {
         configurarSelectCategoria('grupoEditArea', 'grupoNovaCategoriaBloco');
     } else {
         const blocoImagem = ref.imagem_url
-            ? `<img src="${ref.imagem_url}" alt="${ref.nome}" style="width:100%; border-radius:8px; margin-bottom:14px;" onerror="this.style.display='none'">`
+            ? `<img src="${ref.imagem_url}" alt="${escAttr(ref.nome)}" style="width:100%; border-radius:8px; margin-bottom:14px;" onerror="this.style.display='none'">`
             : '';
         modalConteudo.innerHTML = `
             <button class="modal-fechar" onclick="fecharModal()">✕</button>
@@ -643,12 +652,12 @@ function abrirModalGrupo(chave) {
             <p class="info-item"><span class="info-label">Localização:</span> ${ref.localizacao || 'Não cadastrada'}</p>
             <p class="info-item"><span class="info-label">Componentes:</span> ${ref.componentes || 'Não catalogados'}</p>
             <p class="info-item"><span class="info-label">Unidades:</span> ${unidades.length}</p>
- 
+
             <div class="modal-secao">
                 <h4>Situação das unidades</h4>
                 ${listaUnidades}
             </div>
- 
+
             <div class="modal-secao">
                 <div class="form-group">
                     <label for="modalRelatoTexto">Reportar problema com este experimento</label>
@@ -658,17 +667,17 @@ function abrirModalGrupo(chave) {
             </div>
         `;
     }
- 
+
     modalOverlay.style.display = 'flex';
 }
- 
+
 async function salvarEdicaoGrupo(chave) {
     const unidades = experimentos.filter(e => chaveDoGrupo(e) === chave);
     if (unidades.length === 0) return;
- 
+
     const nome = document.getElementById('grupoEditNome').value.trim();
     if (!nome) { alert("O nome do experimento não pode ficar em branco."); return; }
- 
+
     const dados = {
         linhas: unidades.map(u => u.linha),
         nome,
@@ -678,7 +687,7 @@ async function salvarEdicaoGrupo(chave) {
         manual_url: document.getElementById('grupoEditManual').value.trim(),
         roteiro_url: document.getElementById('grupoEditRoteiro').value.trim(),
     };
- 
+
     try {
         dados.area = await resolverCategoriaEscolhida('grupoEditArea', 'grupoNovaCategoriaNome', 'grupoNovaCategoriaCor');
         await enviarParaPlanilha('Experimentos', 'editarGrupo', dados);
@@ -688,13 +697,13 @@ async function salvarEdicaoGrupo(chave) {
         alert("Erro ao salvar alterações: " + err.message);
     }
 }
- 
+
 async function removerGrupo(chave) {
     const unidades = experimentos.filter(e => chaveDoGrupo(e) === chave);
     if (unidades.length === 0) return;
- 
+
     if (!confirm(`Remover TODAS as ${unidades.length} unidade(s) de "${unidades[0].nome}" do inventário?`)) return;
- 
+
     try {
         await enviarParaPlanilha('Experimentos', 'removerGrupo', { linhas: unidades.map(u => u.linha) });
         await recarregarExperimentos();
@@ -702,24 +711,24 @@ async function removerGrupo(chave) {
         alert("Erro ao remover: " + err.message);
     }
 }
- 
+
 // --- MODAL DE DETALHES DO EXPERIMENTO ---
 function abrirModalExperimento(linha) {
     const exp = experimentos.find(e => e.linha === linha);
     if (!exp) return;
- 
+
     const modalOverlay = document.getElementById('modalOverlay');
     const modalConteudo = document.getElementById('modalConteudo');
- 
+
     const statusAtual = exp.status || 'Ativo';
- 
+
     if (usuarioLogado) {
         const opcoesArea = opcoesDeCategoria(exp.area);
- 
+
         modalConteudo.innerHTML = `
             <button class="modal-fechar" onclick="fecharModal()">✕</button>
             <h3>Editar experimento</h3>
- 
+
             <div class="form-group">
                 <label for="modalEditNome">Nome do experimento</label>
                 <input type="text" id="modalEditNome" value="${exp.nome.replace(/"/g, '&quot;')}">
@@ -768,15 +777,15 @@ function abrirModalExperimento(linha) {
                 </select>
             </div>
             <button class="btn-admin-action" onclick="salvarEdicaoExperimento(${linha})">Salvar alterações</button>
- 
+
             <div class="modal-secao">
                 <h4>Relatos deste experimento</h4>
                 <div id="modalRelatosDoItem"></div>
             </div>
         `;
- 
+
         configurarSelectCategoria('modalEditArea', 'modalNovaCategoriaBloco');
- 
+
         const relatosDoItem = relatos.filter(r => String(r.experimento_linha) === String(linha));
         const container = document.getElementById('modalRelatosDoItem');
         if (relatosDoItem.length === 0) {
@@ -795,9 +804,9 @@ function abrirModalExperimento(linha) {
         }
     } else {
         const blocoImagem = exp.imagem_url
-            ? `<img src="${exp.imagem_url}" alt="${exp.nome}" style="width:100%; border-radius:8px; margin-bottom:14px;" onerror="this.style.display='none'">`
+            ? `<img src="${exp.imagem_url}" alt="${escAttr(exp.nome)}" style="width:100%; border-radius:8px; margin-bottom:14px;" onerror="this.style.display='none'">`
             : '';
- 
+
         modalConteudo.innerHTML = `
             <button class="modal-fechar" onclick="fecharModal()">✕</button>
             <h3>${exp.nome}</h3>
@@ -806,7 +815,7 @@ function abrirModalExperimento(linha) {
             <p class="info-item"><span class="info-label">Localização:</span> ${exp.localizacao || 'Não cadastrada'}</p>
             <p class="info-item"><span class="info-label">Componentes:</span> ${exp.componentes || 'Não catalogados'}</p>
             <p class="info-item"><span class="info-label">Status atual:</span> ${statusAtual}</p>
- 
+
             <div class="modal-secao">
                 <div class="form-group">
                     <label for="modalRelatoTexto">Reportar problema com este experimento</label>
@@ -816,18 +825,18 @@ function abrirModalExperimento(linha) {
             </div>
         `;
     }
- 
+
     modalOverlay.style.display = 'flex';
 }
- 
+
 function fecharModal() {
     document.getElementById('modalOverlay').style.display = 'none';
 }
- 
+
 function fecharModalSeClicouFora(event) {
     if (event.target.id === 'modalOverlay') fecharModal();
 }
- 
+
 async function salvarEdicaoExperimento(linha) {
     const nome = document.getElementById('modalEditNome').value.trim();
     const localizacao = document.getElementById('modalEditLocal').value;
@@ -837,9 +846,9 @@ async function salvarEdicaoExperimento(linha) {
     const roteiro_url = document.getElementById('modalEditRoteiro').value.trim();
     const status = document.getElementById('modalEditStatus').value;
     const patrimonio = document.getElementById('modalEditPatrimonio').value.trim();
- 
+
     if (!nome) { alert("O nome do experimento não pode ficar em branco."); return; }
- 
+
     try {
         const area = await resolverCategoriaEscolhida('modalEditArea', 'modalNovaCategoriaNome', 'modalNovaCategoriaCor');
         await enviarParaPlanilha('Experimentos', 'editar', { linha, nome, area, localizacao, componentes, imagem_url, manual_url, roteiro_url, status, patrimonio });
@@ -849,14 +858,14 @@ async function salvarEdicaoExperimento(linha) {
         alert("Erro ao salvar alterações: " + err.message);
     }
 }
- 
+
 async function reportarProblema(linha) {
     const descricao = document.getElementById('modalRelatoTexto').value.trim();
     if (!descricao) { alert("Descreva o problema antes de enviar."); return; }
- 
+
     const hoje = new Date();
     const dataFormatada = `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
- 
+
     try {
         await enviarParaPlanilha('Relatos', 'adicionar', { experimento_linha: linha, descricao, data: dataFormatada });
         alert("Obrigado! O relato foi enviado e será verificado pelo responsável do laboratório.");
@@ -865,21 +874,21 @@ async function reportarProblema(linha) {
         alert("Erro ao enviar relato: " + err.message);
     }
 }
- 
+
 // --- PAINEL ADMIN: RELATOS PENDENTES ---
 function exibirRoteirosCadastrados() {
     const lista = document.getElementById('roteirosCadastradosList');
     const contador = document.getElementById('contadorRoteiros');
     if (!lista || !contador) return;
- 
+
     const comRoteiro = experimentos.filter(e => e.roteiro_url);
     contador.textContent = comRoteiro.length;
- 
+
     if (comRoteiro.length === 0) {
         lista.innerHTML = `<p style="font-size:13px; color:#7f8c8d;">Nenhum roteiro cadastrado ainda.</p>`;
         return;
     }
- 
+
     lista.innerHTML = comRoteiro.map(e => `
         <div class="modal-relato-item" style="display:flex; justify-content:space-between; align-items:center;">
             <strong>${e.nome}</strong>
@@ -887,19 +896,19 @@ function exibirRoteirosCadastrados() {
         </div>
     `).join('');
 }
- 
+
 function exibirRelatosPendentes() {
     const lista = document.getElementById('relatosPendentesList');
     const contador = document.getElementById('contadorRelatos');
     if (!lista || !contador) return;
- 
+
     contador.textContent = relatos.length;
- 
+
     if (relatos.length === 0) {
         lista.innerHTML = `<p style="font-size:13px; color:#7f8c8d;">Nenhum relato pendente.</p>`;
         return;
     }
- 
+
     lista.innerHTML = relatos.map(r => {
         const exp = experimentos.find(e => String(e.linha) === String(r.experimento_linha));
         const nomeExp = exp ? exp.nome : `Experimento (linha ${r.experimento_linha})`;
@@ -916,7 +925,7 @@ function exibirRelatosPendentes() {
         `;
     }).join('');
 }
- 
+
 async function confirmarRelato(linhaRelato, experimentoLinha) {
     try {
         await enviarParaPlanilha('Experimentos', 'mudarStatus', { linha: experimentoLinha, status: 'Com Defeito' });
@@ -927,7 +936,7 @@ async function confirmarRelato(linhaRelato, experimentoLinha) {
         alert("Erro ao confirmar relato: " + err.message);
     }
 }
- 
+
 async function descartarRelato(linhaRelato) {
     if (!confirm("Descartar esse relato sem alterar o status do experimento?")) return;
     try {
@@ -937,7 +946,7 @@ async function descartarRelato(linhaRelato) {
         alert("Erro ao descartar relato: " + err.message);
     }
 }
- 
+
 // --- BARRA DE BUSCA ---
 if (searchBar) {
     searchBar.addEventListener('input', (e) => {
@@ -974,4 +983,3 @@ window.atualizarAgora = function () { carregarDados(true); };
 window.abrirModalGrupo = abrirModalGrupo;
 window.salvarEdicaoGrupo = salvarEdicaoGrupo;
 window.removerGrupo = removerGrupo;
- 
